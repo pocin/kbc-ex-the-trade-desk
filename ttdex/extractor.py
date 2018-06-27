@@ -31,7 +31,7 @@ def validate_config(params):
     return schema(params)
 
 
-class TTDExtractor(BaseTTDClient):
+class TTDExtractor(TTDClient):
     def extract_sitelists(self, params):
         """
         https://apisb.thetradedesk.com/v3/doc/api/post-sitelist-query-advertiser
@@ -54,8 +54,10 @@ class TTDExtractor(BaseTTDClient):
 
         """
         for batch in params:
-            for sitelist in self.get_all_sitelists(batch)['Result']:
-                yield sitelist
+            for chunk in self.get_all_sitelists(batch):
+                # api returns {"Result": [{actual_ sitelists}, {here}], "PageStartIndex": xx}
+                for sitelist in chunk['Result']:
+                    yield sitelist
 
     #or this?
     def extract_campaign_templates(self, campaign_ids):
