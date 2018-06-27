@@ -4,24 +4,50 @@ Can create campaigns and adgroups
 
 # Configuration
 ```javascript
-{
-  "debug": true,
-  "base_url": "https://apisb.thetradedesk.com",
+{ "debug": true,
+  "base_url": "https://apisb.thetradedesk.com/v3",
   "login": "foo",
   "#password": "foo",
-  "extract_predefined": [
-     One of predefined endpoints below
-  ]
-}
+  "extract_predefined": {
+     any of predefined endpoints below
+  }
+ }
+```
+
+`"base_url": "https://apisb.thetradedesk.com/v3"` for sandbox
+
+A final config might look like this
+
+```javascript
+{ "debug": true,
+  "base_url": "https://apisb.thetradedesk.com/v3",
+  "login": "foo",
+  "#password": "foo",
+  "extract_predefined": {
+    "campaign_templates": {
+        "campaign_ids": ["foobar666", "bazbaz42"]
+      },
+    "sitelists_summary": {
+        "iterations": [
+          {
+            "AdvertiserId": "foobar666",
+          },
+          {
+            "AdvertiserId": "hamspam42",
+            "SearchTerms": ["shrobbery"] # + any parameters as described in the API
+          }
+      ]
+    }
+  }
+ }
 ```
 
 ## Predefined endpoints
 ### Get campaign templates
 ```javascript
 {
- "name": "campaign_templates",
- "parameters": {
-  "campaign_ids": ["foobar666", "bazbaz42"']
+ "campaign_templates": {
+    "campaign_ids": ["foobar666", "bazbaz42"]
   }
 }
 ```
@@ -32,17 +58,17 @@ https://apisb.thetradedesk.com/v3/doc/api/post-sitelist-query-advertiser
 Will output a table `sitelists_summary.csv`.
 ```javascript
 {
- "name": "sitelists_summary",
- "parameters": [
-    {
-      "AdvertiserId": "foobar666",
-      "SearchTerms": ["term1", "term2"]
-    },
-    {
-      "AdvertiserId": "hamspam42",
-      "SearchTerms": ["shrobbery"]
-    }
- ]
+ "sitelists_summary": {
+    "iterations": [
+      {
+        "AdvertiserId": "foobar666",
+      },
+      {
+        "AdvertiserId": "hamspam42",
+        "SearchTerms": ["shrobbery"] # + any parameters as described in the API
+      }
+  ]
+ }
 }
 ```
 

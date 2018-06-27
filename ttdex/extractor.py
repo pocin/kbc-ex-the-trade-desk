@@ -1,5 +1,4 @@
 from ttdapi.client import TTDClient, BaseTTDClient
-from keboola.docker import Config
 import voluptuous as vp
 from itertools import tee
 
@@ -10,24 +9,36 @@ import sys
 from pathlib import Path
 import os
 
-def main():
-    logging.info("Hello, world!")
+logger = logging.getLogger(__name__)
+
+def PredefinedTemplates(config):
+    return vp.Schema({
+        vp.Optional("campaign_templates"): {
+            "campaign_ids": [str]
+        },
+        vp.Optional("sitelists_summary"): {
+            "iterations": [
+                vp.Schema(
+                    {
+                        "AdvertiserId": str
+                    },
+                    extra=vp.ALLOW_EXTRA)
+            ]
+        }
+    },
+                     extra=vp.ALLOW_EXTRA)(config)
 
 
 def validate_config(params):
+    logger.info("Validating config")
     schema = vp.Schema({
         "login": str,
         "#password": str,
         vp.Optional("debug"): bool,
-        "evironment": vp.Any("sandbox", "production"),
-        "extract": {
-            vp.Optional("sitelist_summaries"): {
-                "AdvertiserId": "id_here",
-                vp.Optional("SearchTerms"): list,
-                vp.Optional("SortFields"): list
-            }
-        }
-    })
+        "base_url": str,
+        "extract_predefined": PredefinedTemplates
+    }
+    )
     return schema(params)
 
 
@@ -53,11 +64,14 @@ class TTDExtractor(TTDClient):
             "Description": "sample string 1", "Permissions": "Global"}
 
         """
+        logger.info("Extrating sitelists")
         for batch in params:
+            logger.info(batch)
             for chunk in self.get_all_sitelists(batch):
                 # api returns {"Result": [{actual_ sitelists}, {here}], "PageStartIndex": xx}
                 for sitelist in chunk['Result']:
                     yield sitelist
+        logger.info("Sitelists extracted")
 
     #or this?
     def extract_campaign_templates(self, campaign_ids):
@@ -65,12 +79,15 @@ class TTDExtractor(TTDClient):
         https://apisb.thetradedesk.com/v3/doc/api/post-sitelist-query-advertiser
 
         """
+        logger.info("Extrating campaign templates")
         for campaign_id in campaign_ids:
+            logger.info("campaign_id %s", campaign_id)
             template = self.get_campaign_template(campaign_id)
             yield {
                 "CampaignId": campaign_id,
                 "template": template
             }
+        logger.info("campaign templates extracted")
 
     @staticmethod
     def serialize_response_to_json(original_stream, outpath):
@@ -82,10 +99,12 @@ class TTDExtractor(TTDClient):
             None if the stream is empty, else path to the output csv
         """
         # do not use original_stream here at all!
+        logger.info("Saving to %s", outpath)
         _header, stream_of_data = tee(original_stream)
         try:
             header = next(_header).keys()
         except StopIteration:
+            logger.info("empty data, didn't save anything")
             return None
 
         with open(outpath, 'w') as outf:
@@ -107,13 +126,23 @@ class TTDExtractor(TTDClient):
 
 
 
-def _main(datadir):
-    cfg = Config(datadir)
-    params = validate_config(cfg.get_parameters())
+def main(datadir, params):
     _datadir = Path(datadir)
     intables = _datadir / 'in/tables'
-    if params.get('debug'):
-        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
-    else:
-        logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    outtables = _datadir / 'out/tables'
+
+    ex = TTDExtractor(login=params['login'],
+                      password=params["#password"],
+                      base_url=params["base_url"])
+    config_templates = params["extract_predefined"].get("campaign_templates")
+    if config_templates is not None:
+        with ex:
+            templates = ex.extract_campaign_templates(config_templates["campaign_ids"])
+            out = ex.serialize_response_to_json(templates, outtables / "campaign_templates.csv")
+
+    config_sitelists = params["extract_predefined"].get("sitelists_summary")
+    if config_sitelists is not None:
+        with ex:
+            sitelists = ex.extract_sitelists(config_sitelists['iterations'])
+            out = ex.serialize_response_to_json(sitelists, outtables / "sitelists_summary.csv")
 
