@@ -1,7 +1,4 @@
 # The trade desk Extractor for Keboola connection (STILL UNDER HEAVY DEV)
-
-Can create campaigns and adgroups
-
 # Configuration
 ```javascript
 { "debug": true,
@@ -27,6 +24,9 @@ A final config might look like this
     "campaign_templates": {
         "campaign_ids": ["foobar666", "bazbaz42"]
       },
+    "adgroup_templates": {
+        "campaign_ids": ["foobar666", "bazbaz42"]
+      },
     "sitelists_summary": {
         "iterations": [
           {
@@ -44,9 +44,22 @@ A final config might look like this
 
 ## Predefined endpoints
 ### Get campaign templates
+
+https://apisb.thetradedesk.com/v3/doc/api/get-campaign-template-campaignid
+
 ```javascript
 {
  "campaign_templates": {
+    "campaign_ids": ["foobar666", "bazbaz42"]
+  }
+}
+```
+
+### Get adgroup templates
+https://apisb.thetradedesk.com/v3/doc/api/post-adgroup-query-campaign
+```javascript
+{
+ "adgroup_templates": {
     "campaign_ids": ["foobar666", "bazbaz42"]
   }
 }

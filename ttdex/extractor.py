@@ -73,7 +73,6 @@ class TTDExtractor(TTDClient):
                     yield sitelist
         logger.info("Sitelists extracted")
 
-    #or this?
     def extract_campaign_templates(self, campaign_ids):
         """
         https://apisb.thetradedesk.com/v3/doc/api/post-sitelist-query-advertiser
@@ -81,13 +80,32 @@ class TTDExtractor(TTDClient):
         """
         logger.info("Extrating campaign templates")
         for campaign_id in campaign_ids:
-            logger.info("campaign_id %s", campaign_id)
+            logger.info("downloading template for campaign_id %s", campaign_id)
             template = self.get_campaign_template(campaign_id)
             yield {
                 "CampaignId": campaign_id,
                 "template": template
             }
         logger.info("campaign templates extracted")
+
+    def extract_adgroup_templates(self, campaign_ids):
+        logger.info("Extracting adgroup templates for campaigns")
+        for campaign_id in campaign_ids:
+            payload = {
+                'CamapignId': campaign_id
+            }
+            logger.info("downloading adgroup templates for campaign_id %s", campaign_id)
+            adgroup_templates = self.post_paginated(
+                'adgroup/query/campaign',
+                json=payload
+                )
+            for page in adgroup_templates:
+                for template in page["Result"]:
+                    yield {
+                        "CampaignId": campaign_id,
+                        "AdgroupId": template["AdGroupId"],
+                        "template": template
+                    }
 
     @staticmethod
     def serialize_response_to_json(original_stream, outpath):
@@ -134,15 +152,23 @@ def main(datadir, params):
     ex = TTDExtractor(login=params['login'],
                       password=params["#password"],
                       base_url=params["base_url"])
-    config_templates = params["extract_predefined"].get("campaign_templates")
-    if config_templates is not None:
+    config_campaign_templates = params["extract_predefined"].get("campaign_templates")
+    if config_campaign_templates is not None:
         with ex:
-            templates = ex.extract_campaign_templates(config_templates["campaign_ids"])
-            out = ex.serialize_response_to_json(templates, outtables / "campaign_templates.csv")
+            templates = ex.extract_campaign_templates(
+                config_campaign_templates["campaign_ids"])
+            out = ex.serialize_response_to_json(
+                templates,
+                outtables / "campaign_templates.csv")
+
+    config_adgroup_templates = params["extract_predefined"].get("adgroup_templates")
+    if config_adgroup_templates is not None:
+        with ex:
+            templates = ex.extract_adgroup_templates(config_adgroup_templates["campaign_ids"])
+            out = ex.serialize_response_to_json(templates, outtables / "adgroup_templates.csv")
 
     config_sitelists = params["extract_predefined"].get("sitelists_summary")
     if config_sitelists is not None:
         with ex:
             sitelists = ex.extract_sitelists(config_sitelists['iterations'])
             out = ex.serialize_response_to_json(sitelists, outtables / "sitelists_summary.csv")
-
