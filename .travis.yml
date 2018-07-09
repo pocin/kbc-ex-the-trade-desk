@@ -8,7 +8,7 @@ before_script:
   - docker build . -t $APP_IMAGE -t $APP_IMAGE:dev
 
 script:
-  - docker run --rm -e TTD_USERNAME -e TTD_PASSWORD $APP_IMAGE python -m pytest
+  - docker run --rm -e TTD_USERNAME -e TTD_PASSWORD -e TTD_ADGROUP_TEMPLATES_CAMPAIGN_ID $APP_IMAGE python -m pytest
 
 after_success:
   - docker images

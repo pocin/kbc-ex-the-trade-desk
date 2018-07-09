@@ -92,12 +92,12 @@ class TTDExtractor(TTDClient):
         logger.info("Extracting adgroup templates for campaigns")
         for campaign_id in campaign_ids:
             payload = {
-                'CamapignId': campaign_id
+                'CampaignId': campaign_id
             }
             logger.info("downloading adgroup templates for campaign_id %s", campaign_id)
             adgroup_templates = self.post_paginated(
                 'adgroup/query/campaign',
-                json=payload
+                json_payload=payload
                 )
             for page in adgroup_templates:
                 for template in page["Result"]:

@@ -56,4 +56,10 @@ def test_extracting_campaign_templates(extractor):
     assert templates[0]["template"] is None
 
 
+def test_extracting_adgroup_templates(extractor):
+    ids = [os.environ['TTD_ADGROUP_TEMPLATES_CAMPAIGN_ID']]
+    templates = list(extractor.extract_adgroup_templates(ids))
+    assert len(templates) > 2
+    assert templates[0]["CampaignId"] == ids[0]
+    assert isinstance(templates[0]["template"], dict)
 
