@@ -11,10 +11,14 @@ import os
 
 logger = logging.getLogger(__name__)
 
+
 def PredefinedTemplates(config):
     return vp.Schema({
         vp.Optional("campaign_templates"): {
-            "campaign_ids": [str]
+            "campaign_ids": [vp.Coerce(str)]
+        },
+        vp.Optional("adgroup_templates"): {
+            "campaign_ids": [vp.Coerce(str)]
         },
         vp.Optional("sitelists_summary"): {
             "iterations": [
