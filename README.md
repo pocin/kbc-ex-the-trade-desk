@@ -102,6 +102,38 @@ https://apisb.thetradedesk.com/v3/doc/api/post-advertiser-query-partner
 "all_advertisers": {"partner_id": "your_partner_id"}
 ```
 
+### Get all campaigns for all advertisers for given partner_id
+gets advetisers from https://apisb.thetradedesk.com/v3/doc/api/post-advertiser-query-partner and consequently this https://api.thetradedesk.com/v3/doc/api/post-campaign-query-advertiser endpoint to get all campaigns
+
+
+Will output a table `all_campaigns_all_advertisers.csv`.
+```javascript
+{
+ "all_campaigns_all_advertisers": {
+      {
+        "partner_id": "foobar666",
+        "search_terms": ["optional", "array", "of", "search terms"],
+        "availabilities": ["Available"] # default
+      }
+}
+```
+
+### Get all adgroups for all advertisers for given partner_id
+gets advetisers from https://apisb.thetradedesk.com/v3/doc/api/post-advertiser-query-partner and consequently this https://api.thetradedesk.com/v3/doc/api/post-adgroup-query-advertiser endpoint to get all adgroups
+
+
+Will output a table `all_adgroups_all_advertisers.csv`.
+```javascript
+{
+ "all_adgroups_all_advertisers": {
+      {
+        "partner_id": "foobar666",
+        "search_terms": ["optional", "array", "of", "search terms"],
+        "availabilities": ["Available"] # default
+      }
+}
+```
+
 ## custom queries using POST requests & paginated endpoints
 such as https://api.thetradedesk.com/v3/doc/api/post-campaign-query-advertiser
 

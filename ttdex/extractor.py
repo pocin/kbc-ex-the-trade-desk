@@ -110,6 +110,66 @@ class TTDExtractor(TTDClient):
                         "template": template
                     }
 
+
+    def get_all_campaigns_all_advertisers(
+            self,
+            partner_id,
+            search_terms=None,
+            availabilities=["Available"]):
+        yield from self._get_all_things_all_advertisers(
+            thing='campaign',
+            partner_id=partner_id,
+            search_terms=search_terms,
+            availabilities=availabilities)
+
+    def get_all_adgroups_all_advertisers(
+            self,
+            partner_id,
+            search_terms=None,
+            availabilities=["Available"]):
+        yield from self._get_all_things_all_advertisers(
+            thing='adgroup',
+            partner_id=partner_id,
+            search_terms=search_terms,
+            availabilities=availabilities)
+
+    def _get_all_things_all_advertisers(
+            self,
+            thing,
+            partner_id,
+            search_terms=None,
+            availabilities=['Available']):
+
+        available_things = ("campaign", "adgroup")
+        if thing not in available_things:
+            raise ValueError(
+                "thing must be one of {}, not {}".format(available_things,
+                                                         thing))
+        logger.info(
+            "Fetching all %s for %s, (SearchTerms=%s), advertisers of partner_id %s",
+            thing,
+            search_terms,
+            availabilities,
+            partner_id)
+
+        advertisers_payload = {
+            "PartnerId": partner_id,
+            "availabilities": availabilities
+        }
+        if search_terms is not None:
+            advertisers_payload['SearchTerms'] = search_terms
+
+        for advertiser in self.get_all_advertisers(advertisers_payload):
+            logger.info("Processing advertiser '%s'", advertiser)
+            thing_payload = {
+                "AdvertiserId": advertiser['AdvertiserId']
+            }
+            yield from self.post_paginated(
+                endpoint='{}/query/advertiser'.format(thing),
+                json_payload=thing_payload,
+                stream_items=True)
+
+
     @staticmethod
     def serialize_response_to_json(original_stream, outpath):
         """Save the stream of json objects (dicts) into csv
@@ -179,11 +239,30 @@ def main(datadir, params):
         with ex:
             sitelists = ex.extract_sitelists(config_sitelists['iterations'])
             out = ex.serialize_response_to_json(sitelists, outtables / "sitelists_summary.csv")
+
     config_get_advertisers = p_predef.get("all_advertisers")
     if config_get_advertisers is not None:
         with ex:
             advertisers = ex.get_all_advertisers({"PartnerId": config_sitelists['partner_id']})
             out = ex.serialize_response_to_json(advertisers, outtables / "advertisers.csv")
+
+    cfg_gacaa = p_predef.get("all_campaigns_all_advertisers")
+    if cfg_gacaa is not None:
+        with ex:
+            advertisers = ex.get_all_campaigns_all_advertisers(**cfg_gacaa)
+            out = ex.serialize_response_to_json(
+                sitelists,
+                outtables / "all_campaigns_all_advertisers.csv")
+
+
+    cfg_gaaaa = p_predef.get("all_adgroups_all_advertisers")
+    if cfg_gaaaa is not None:
+        with ex:
+            advertisers = ex.get_all_adgroups_all_advertisers(**cfg_gaaaa)
+            out = ex.serialize_response_to_json(
+                sitelists,
+                outtables / "all_adgroups_all_advertisers.csv")
+
     for custom_query in params.get("custom_post_paginated_queries", []):
         with ex:
             stream = ex.post_paginated(
