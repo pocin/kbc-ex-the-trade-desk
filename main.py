@@ -1,4 +1,5 @@
 from ttdex.extractor import main, validate_config
+from ttdapi.exceptions import TTDClientError
 from keboola.docker import Config
 import sys
 import requests
@@ -19,7 +20,9 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.INFO, stream=sys.stdout)
             logging.debug("Logging active")
         main(datadir, params)
-    except (ValueError, KeyError, requests.HTTPError) as err:
+    except (ValueError, KeyError, requests.HTTPError, TTDClientError) as err:
         logging.error(err)
+        sys.exit(1)
     except:
         logging.exception("Internal error")
+        sys.exit(2)
