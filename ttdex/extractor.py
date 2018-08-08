@@ -34,13 +34,14 @@ def PredefinedTemplates(config):
 
 def validate_config(params):
     logger.info("Validating config")
-    schema = vp.Schema({
-        "login": str,
-        "#password": str,
-        vp.Optional("debug"): bool,
-        "base_url": str,
-        "extract_predefined": PredefinedTemplates
-    }
+    schema = vp.Schema(
+        {
+            "login": str,
+            "#password": str,
+            vp.Optional("debug"): bool,
+            "base_url": str,
+            "extract_predefined": PredefinedTemplates
+        }
     )
     return schema(params)
 
@@ -222,45 +223,47 @@ def main(datadir, params):
     config_campaign_templates = p_predef.get("campaign_templates")
     if config_campaign_templates is not None:
         with ex:
-            templates = ex.extract_campaign_templates(
+            campaign_templates = ex.extract_campaign_templates(
                 config_campaign_templates["campaign_ids"])
-            out = ex.serialize_response_to_json(
-                templates,
+            ex.serialize_response_to_json(
+                campaign_templates,
                 outtables / "campaign_templates.csv")
 
     config_adgroup_templates = p_predef.get("adgroup_templates")
     if config_adgroup_templates is not None:
         with ex:
-            templates = ex.extract_adgroup_templates(config_adgroup_templates["campaign_ids"])
-            out = ex.serialize_response_to_json(templates, outtables / "adgroup_templates.csv")
+            adgroup_templates = ex.extract_adgroup_templates(config_adgroup_templates["campaign_ids"])
+            ex.serialize_response_to_json(
+                adgroup_templates,
+                outtables / "adgroup_templates.csv")
 
     config_sitelists = p_predef.get("sitelists_summary")
     if config_sitelists is not None:
         with ex:
             sitelists = ex.extract_sitelists(config_sitelists['iterations'])
-            out = ex.serialize_response_to_json(sitelists, outtables / "sitelists_summary.csv")
+            ex.serialize_response_to_json(sitelists, outtables / "sitelists_summary.csv")
 
     config_get_advertisers = p_predef.get("all_advertisers")
     if config_get_advertisers is not None:
         with ex:
             advertisers = ex.get_all_advertisers({"PartnerId": config_sitelists['partner_id']})
-            out = ex.serialize_response_to_json(advertisers, outtables / "advertisers.csv")
+            ex.serialize_response_to_json(advertisers, outtables / "advertisers.csv")
 
     cfg_gacaa = p_predef.get("all_campaigns_all_advertisers")
     if cfg_gacaa is not None:
         with ex:
-            advertisers = ex.get_all_campaigns_all_advertisers(**cfg_gacaa)
-            out = ex.serialize_response_to_json(
-                sitelists,
+            campaigns = ex.get_all_campaigns_all_advertisers(**cfg_gacaa)
+            ex.serialize_response_to_json(
+                campaigns,
                 outtables / "all_campaigns_all_advertisers.csv")
 
 
     cfg_gaaaa = p_predef.get("all_adgroups_all_advertisers")
     if cfg_gaaaa is not None:
         with ex:
-            advertisers = ex.get_all_adgroups_all_advertisers(**cfg_gaaaa)
-            out = ex.serialize_response_to_json(
-                sitelists,
+            adgroups = ex.get_all_adgroups_all_advertisers(**cfg_gaaaa)
+            ex.serialize_response_to_json(
+                adgroups,
                 outtables / "all_adgroups_all_advertisers.csv")
 
     for custom_query in params.get("custom_post_paginated_queries", []):
@@ -269,7 +272,7 @@ def main(datadir, params):
                 endpoint=custom_query['endpoint'],
                 json_payload=custom_query['payload'],
                 stream_items=True)
-            outfile = ex.serialize_response_to_json(
+            ex.serialize_response_to_json(
                 stream,
                 outtables / Path(custom_query['filename']).stem + '.csv'
             )
