@@ -49,7 +49,7 @@ A final config might look like this
  }
 ```
 
-## Predefined endpoints
+## Predefined requests
 ### Get campaign templates
 
 https://apisb.thetradedesk.com/v3/doc/api/get-campaign-template-campaignid

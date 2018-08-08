@@ -1,13 +1,12 @@
-from ttdapi.client import TTDClient, BaseTTDClient
-import voluptuous as vp
-from itertools import tee
-
+"""TTD extractor"""
 import csv
 import json
 import logging
-import sys
+from itertools import tee
 from pathlib import Path
-import os
+
+import voluptuous as vp
+from ttdapi.client import TTDClient
 
 logger = logging.getLogger(__name__)
 
@@ -133,9 +132,11 @@ class TTDExtractor(TTDClient):
             writer = csv.DictWriter(outf, fieldnames=header)
             writer.writeheader()
             for row in stream_of_data:
-                # take write scalar values as columns, but safely serialize dicts/lists into json strings
+                # take write scalar values as columns, but safely serialize
+                # dicts/lists into json strings
                 # In case of templates the jsons are useful as they are
-                # in other cases the json objects can be converted to csv in a separate component eg.
+                # in other cases the json objects can be converted to csv in a
+                # separate component eg.
                 # https://components.keboola.com/~/components/apac.processor-flatten-json
                 writer.writerow(
                     {
@@ -156,7 +157,9 @@ def main(datadir, params):
     ex = TTDExtractor(login=params['login'],
                       password=params["#password"],
                       base_url=params["base_url"])
-    config_campaign_templates = params["extract_predefined"].get("campaign_templates")
+
+    p_predef = params.get("extract_predefined", {})
+    config_campaign_templates = p_predef.get("campaign_templates")
     if config_campaign_templates is not None:
         with ex:
             templates = ex.extract_campaign_templates(
@@ -165,13 +168,13 @@ def main(datadir, params):
                 templates,
                 outtables / "campaign_templates.csv")
 
-    config_adgroup_templates = params["extract_predefined"].get("adgroup_templates")
+    config_adgroup_templates = p_predef.get("adgroup_templates")
     if config_adgroup_templates is not None:
         with ex:
             templates = ex.extract_adgroup_templates(config_adgroup_templates["campaign_ids"])
             out = ex.serialize_response_to_json(templates, outtables / "adgroup_templates.csv")
 
-    config_sitelists = params["extract_predefined"].get("sitelists_summary")
+    config_sitelists = p_predef.get("sitelists_summary")
     if config_sitelists is not None:
         with ex:
             sitelists = ex.extract_sitelists(config_sitelists['iterations'])
