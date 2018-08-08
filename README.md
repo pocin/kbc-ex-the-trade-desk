@@ -110,7 +110,6 @@ Will output a table `all_campaigns_all_advertisers.csv`.
 ```javascript
 {
  "all_campaigns_all_advertisers": {
-      {
         "partner_id": "foobar666",
         "search_terms": ["optional", "array", "of", "search terms"],
         "availabilities": ["Available"] # default

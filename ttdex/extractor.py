@@ -246,7 +246,7 @@ def main(datadir, params):
     config_get_advertisers = p_predef.get("all_advertisers")
     if config_get_advertisers is not None:
         with ex:
-            advertisers = ex.get_all_advertisers({"PartnerId": config_sitelists['partner_id']})
+            advertisers = ex.get_all_advertisers({"PartnerId": config_get_advertisers['partner_id']})
             ex.serialize_response_to_json(advertisers, outtables / "advertisers.csv")
 
     cfg_gacaa = p_predef.get("all_campaigns_all_advertisers")
