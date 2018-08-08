@@ -92,6 +92,16 @@ Will output a table `sitelists_summary.csv`.
 }
 ```
 
+### All advertisers for partner_id
+
+https://apisb.thetradedesk.com/v3/doc/api/post-advertiser-query-partner
+
+`all_advertisers.csv`
+
+```javascript
+"all_advertisers": {"partner_id": "your_partner_id"}
+```
+
 ## custom queries using POST requests & paginated endpoints
 such as https://api.thetradedesk.com/v3/doc/api/post-campaign-query-advertiser
 

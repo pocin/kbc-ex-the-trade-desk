@@ -179,6 +179,11 @@ def main(datadir, params):
         with ex:
             sitelists = ex.extract_sitelists(config_sitelists['iterations'])
             out = ex.serialize_response_to_json(sitelists, outtables / "sitelists_summary.csv")
+    config_get_advertisers = p_predef.get("all_advertisers")
+    if config_get_advertisers is not None:
+        with ex:
+            advertisers = ex.get_all_advertisers({"PartnerId": config_sitelists['partner_id']})
+            out = ex.serialize_response_to_json(advertisers, outtables / "advertisers.csv")
     for custom_query in params.get("custom_post_paginated_queries", []):
         with ex:
             stream = ex.post_paginated(
