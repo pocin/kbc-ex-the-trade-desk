@@ -20,6 +20,13 @@ A final config might look like this
   "base_url": "https://apisb.thetradedesk.com/v3",
   "login": "foo",
   "#password": "foo",
+  "custom_post_paginated_queries": [
+    {
+      "endpoint": "sitelists/query/advertiser",
+      "payload": {"AdvertiserId": "fooxuz"},
+      "filename": "advertiser_fooxuz.csv"
+    }
+],
   "extract_predefined": {
     "campaign_templates": {
         "campaign_ids": ["foobar666", "bazbaz42"]
@@ -85,6 +92,21 @@ Will output a table `sitelists_summary.csv`.
 }
 ```
 
+## custom queries using POST requests & paginated endpoints
+such as https://api.thetradedesk.com/v3/doc/api/post-campaign-query-advertiser
+
+make a post request to `"endpoint"` with `"payload"` as a json payload, save the output to `"filename"`. The pagination is handled implicitly.
+
+```javascript
+
+"custom_post_paginated_queries": [{
+   "endpoint": "enpdoint/at/somehwere",
+   "payload": {"literal": "json_payload", "what": ["as", expected", "by", "api"]},
+   "filename": "query_name.csv"
+}]
+
+
+```
 
 # Development
 ## Run locally

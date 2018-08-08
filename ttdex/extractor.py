@@ -176,3 +176,13 @@ def main(datadir, params):
         with ex:
             sitelists = ex.extract_sitelists(config_sitelists['iterations'])
             out = ex.serialize_response_to_json(sitelists, outtables / "sitelists_summary.csv")
+    for custom_query in params.get("custom_post_paginated_queries", []):
+        with ex:
+            stream = ex.post_paginated(
+                endpoint=custom_query['endpoint'],
+                json_payload=custom_query['payload'],
+                stream_items=True)
+            outfile = ex.serialize_response_to_json(
+                stream,
+                outtables / Path(custom_query['filename']).stem + '.csv'
+            )
