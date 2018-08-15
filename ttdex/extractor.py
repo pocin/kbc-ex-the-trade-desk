@@ -85,7 +85,7 @@ class TTDExtractor(TTDClient):
         logger.info("Extrating campaign templates")
         for campaign_id in campaign_ids:
             logger.info("downloading template for campaign_id %s", campaign_id)
-            template = self.get_campaign_template(campaign_id)
+            template = self.get("/campaign/" + campaign_id)
             yield {
                 "CampaignId": campaign_id,
                 "template": template
