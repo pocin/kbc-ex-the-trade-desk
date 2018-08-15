@@ -47,13 +47,12 @@ def test_extracting_sitelists(extractor):
     assert len(sitelists) == 0
 
 
-@pytest.mark.skip(reason="there are no templates in the sandbox")
 def test_extracting_campaign_templates(extractor):
-    ids = ['8frjjlc']
+    ids = [os.environ['TTD_ADGROUP_TEMPLATES_CAMPAIGN_ID']]
     templates = list(extractor.extract_campaign_templates(ids))
     assert len(templates) == 1
     assert templates[0]["CampaignId"] == ids[0]
-    assert templates[0]["template"] is None
+    assert templates[0]["template"] is not None
 
 
 def test_extracting_adgroup_templates(extractor):
