@@ -7,3 +7,9 @@ test:
 
 clean:
 	docker-compose down
+
+sh:
+	docker-compose run --rm dev /bin/sh
+
+build:
+	docker-compose build dev

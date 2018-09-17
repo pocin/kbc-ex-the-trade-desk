@@ -5,6 +5,8 @@ import logging
 from itertools import tee
 from pathlib import Path
 
+from typing import Iterable, Tuple, Optional, Callable
+
 import voluptuous as vp
 from ttdapi.client import TTDClient
 
@@ -45,6 +47,17 @@ def validate_config(params):
     )
     return schema(params)
 
+def load_tracking_versions(path_to_statefile, endpoint):
+    with open(path_to_statefile) as f:
+        state = json.load(f)
+        return state.get(endpoint, dict())
+
+
+class StateFile(dict):
+    def save_to_file(self, path='out/state.json'):
+        logger.info("Saving statefile to %s", path)
+        with open(path, 'w') as outf:
+            json.dump(self, outf)
 
 class TTDExtractor(TTDClient):
     def extract_sitelists(self, params):
@@ -112,6 +125,68 @@ class TTDExtractor(TTDClient):
                     }
 
 
+    def _delta_things(
+            self,
+            fetch_all_delta_THING_for_advertiser: Callable,
+            last_change_tracking_versions: dict,
+            partner_id: str=None,
+            advertisers: Optional[Iterable[str]]=None):
+
+        if ((partner_id is None and advertisers is None) or
+            (partner_id is not None and advertisers is not None)):
+            raise ValueError("supply exactly one of `partner_id` or a list of `advertisers`")
+
+        if advertisers is None:
+            advertisers = [
+                a['AdvertiserId']
+                for a
+                in self.get_all_advertisers(
+                    {
+                        "PartnerId": partner_id,
+                        "availabilities": ["Available"]
+                    })
+            ]
+        for advertiser_id in advertisers:
+            logger.debug("Processing advertiser_id %s", advertiser_id)
+            # import pdb; pdb.set_trace()
+            last_change_tracking_version = last_change_tracking_versions.get(advertiser_id)
+            for data, tracking_version in fetch_all_delta_THING_for_advertiser(
+                    advertiser_id,
+                    last_change_tracking_version):
+                # {id: version} is a duplication, but the overhead shouldn't
+                # be too dramatic as the data is written to file right away
+                yield data, {advertiser_id: tracking_version}
+
+    def delta_campaigns(
+            self,
+            last_change_tracking_versions: dict,
+            partner_id:str =None,
+            advertisers: Optional[Iterable[str]]=None
+    ) -> Iterable[Tuple[dict, dict]]:
+        """The first dict in the tuple is the JSON data, the second is
+        a {advertiserId: last_change_tracking_version}
+        """
+
+        yield from self._delta_things(
+            self.fetch_all_delta_campaigns_for_advertiser,
+            last_change_tracking_versions=last_change_tracking_versions,
+            partner_id=partner_id,
+            advertisers=advertisers)
+
+    def delta_adgroups(
+            self,
+            last_change_tracking_versions: dict,
+            partner_id:str =None,
+            advertisers: Optional[Iterable[str]]=None,
+            ):
+
+
+        yield from self._delta_things(
+            self.fetch_all_delta_adgroups_for_advertiser,
+            last_change_tracking_versions=last_change_tracking_versions,
+            partner_id=partner_id,
+            advertisers=advertisers)
+
     def get_all_campaigns_all_advertisers(
             self,
             partner_id,
@@ -172,6 +247,65 @@ class TTDExtractor(TTDClient):
 
 
     @staticmethod
+    def serialize_delta_stream_to_csv(original_delta_stream: Iterable[Tuple[dict, dict]],
+                                      outpath):
+        """A delta stream is a stream of tuples, (json_data, {advertiser_id: last_change_Tracking_version})
+
+        We need to write the json_data to csv and cache the last_change_tracking_version
+        """
+        # For now a dumb copy paste of serialize_response_to_json - no time to refactor
+        # will I regret?
+
+        logger.info("Saving to %s", outpath)
+
+        _header, delta_stream_of_data = tee(original_delta_stream, 2)
+
+        import pdb; pdb.set_trace()
+        for datapoint, _ in _header:
+            if datapoint is not None:
+                logger.debug("Found header")
+                header = datapoint.keys()
+                break
+        else:
+            # a corner case when neither of the advertisers had any data,
+            # and the delta_stream is full of just tracking_versions
+            tracking_versions = {}
+            for _, track_version in delta_stream_of_data:
+                tracking_versions.update(track_version)
+            logging.info("delta_stream did not contain any data, "
+                            "but was full of tracking_versions. "
+                            "No tables will be in out/tables"
+                            "but statefile will be updated")
+            return None, tracking_versions
+
+        tracking_versions = {}
+        with open(outpath, 'w') as outf:
+            writer = csv.DictWriter(outf, fieldnames=header)
+            writer.writeheader()
+            for row, last_tracking_version in delta_stream_of_data:
+                # take write scalar values as columns, but safely serialize
+                # dicts/lists into json strings
+                # In case of templates the jsons are useful as they are
+                # in other cases the json objects can be converted to csv in a
+                # separate component eg.
+                # https://components.keboola.com/~/components/apac.processor-flatten-json
+
+                # if row is None it means that the delta endpoint returned
+                # empty data but a new tracking version which we need to cache
+                if row is not None:
+                    writer.writerow(
+                        {
+                            key: (json.dumps(value) if isinstance(value, (dict, list)) else value)
+                            for key, value
+                            in row.items()
+                        }
+                    )
+                tracking_versions.update(last_tracking_version)
+
+        return outpath, tracking_versions
+
+
+    @staticmethod
     def serialize_response_to_json(original_stream, outpath):
         """Save the stream of json objects (dicts) into csv
 
@@ -215,6 +349,7 @@ def main(datadir, params):
     intables = _datadir / 'in/tables'
     outtables = _datadir / 'out/tables'
 
+    state = StateFile()
     ex = TTDExtractor(login=params['login'],
                       password=params["#password"],
                       base_url=params["base_url"])
@@ -276,3 +411,58 @@ def main(datadir, params):
                 stream,
                 outtables / Path(custom_query['filename']).stem + '.csv'
             )
+
+    cfg_delta_campaigns = p_predef.get("delta_campaigns")
+    if cfg_delta_campaigns is not None:
+        with ex:
+            # download all advertisers
+            # Iterate over them
+            # If advertiser is in statefile use that last_change_tracking_version
+            # serialize everything to csv
+            if cfg_delta_campaigns.get('reset'):
+                state_campaign_tracking_ids = {}
+            else:
+                state_campaign_tracking_ids = load_tracking_versions(
+                    _datadir / "in/state.json",
+                    "delta_campaigns")
+
+            camp_delta_stream = ex.delta_campaigns(
+                last_change_tracking_versions=state_campaign_tracking_ids,
+                partner_id=cfg_delta_campaigns.get('partner_id'),
+                advertisers=cfg_delta_campaigns.get('advertisers'))
+            _, campaign_tracking_versions = ex.serialize_delta_stream_to_csv(
+                camp_delta_stream,
+                outtables / 'delta_campaigns.csv'
+            )
+            state["delta_campaigns"] = campaign_tracking_versions
+
+
+
+    cfg_delta_adgroups = p_predef.get("delta_adgroups")
+    if cfg_delta_adgroups is not None:
+        with ex:
+            # download all advertisers
+            # Iterate over them
+            # If advertiser is in statefile use that last_change_tracking_version
+            # serialize everything to csv
+
+            if cfg_delta_adgroups.get('reset'):
+                state_adgroup_tracking_ids = {}
+            else:
+                state_adgroup_tracking_ids = load_tracking_versions(
+                    _datadir / "in/state.json",
+                    "delta_adgroups")
+
+            adgrp_delta_stream = ex.delta_adgroups(
+                last_change_tracking_versions=state_adgroup_tracking_ids,
+                partner_id=cfg_delta_adgroups.get('partner_id'),
+                advertisers=cfg_delta_adgroups.get('advertisers'))
+
+            _, adgroup_tracking_versions = ex.serialize_delta_stream_to_csv(
+                adgrp_delta_stream,
+                outtables / 'delta_adgroups.csv'
+            )
+
+            state["delta_adgroups"] = adgroup_tracking_versions
+
+    state.save_to_file(path= _datadir / 'out/state.json')

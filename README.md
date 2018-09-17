@@ -62,7 +62,9 @@ https://apisb.thetradedesk.com/v3/doc/api/get-campaign-template-campaignid
 }
 ```
 
-### Get adgroup templates
+### Get adgroup templates (pseudo)
+
+the campaign templates are implemented as dummy-campaigns
 https://apisb.thetradedesk.com/v3/doc/api/post-adgroup-query-campaign
 ```javascript
 {
@@ -117,6 +119,7 @@ Will output a table `all_campaigns_all_advertisers.csv`.
 }
 ```
 
+
 ### Get all adgroups for all advertisers for given partner_id
 gets advetisers from https://apisb.thetradedesk.com/v3/doc/api/post-advertiser-query-partner and consequently this https://api.thetradedesk.com/v3/doc/api/post-adgroup-query-advertiser endpoint to get all adgroups
 
@@ -129,6 +132,36 @@ Will output a table `all_adgroups_all_advertisers.csv`.
         "partner_id": "foobar666",
         "search_terms": ["optional", "array", "of", "search terms"],
         "availabilities": ["Available"] # default
+      }
+}
+```
+
+### Incremental (=delta) campaigns for all advertisers for given partner_id
+https://api.thetradedesk.com/v3/doc/api/post-delta-campaign-query-advertiser
+the `LastChangeTrackingVersion` is cached under the hood in `state.json`
+
+use `"reset": True` to wipe statefile and redownload everything
+```javascript
+{
+ "delta_campaigns_all_advertisers": {
+        "partner_id": "foobar666",
+        "advertisers": ["list", "of", "advetisers"], #either this or partner_id, NOT both!
+        "reset": False
+      }
+}
+```
+
+### Incremental (=delta) adgroups for all advertisers for given partner_id
+https://api.thetradedesk.com/v3/doc/api/post-delta-adgroup-query-advertiser
+the `LastChangeTrackingVersion` is cached under the hood in `state.json`
+
+use `"reset": True` to wipe statefile and redownload everything
+```javascript
+{
+ "delta_adgroups_all_advertisers": {
+        "partner_id": "foobar666",
+        "advertisers": ["list", "of", "advetisers"], #either this or partner_id, NOT both!
+        "reset": False
       }
 }
 ```
