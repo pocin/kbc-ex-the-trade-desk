@@ -148,7 +148,6 @@ class TTDExtractor(TTDClient):
             ]
         for advertiser_id in advertisers:
             logger.debug("Processing advertiser_id %s", advertiser_id)
-            # import pdb; pdb.set_trace()
             last_change_tracking_version = last_change_tracking_versions.get(advertiser_id)
             for data, tracking_version in fetch_all_delta_THING_for_advertiser(
                     advertiser_id,
@@ -260,7 +259,6 @@ class TTDExtractor(TTDClient):
 
         _header, delta_stream_of_data = tee(original_delta_stream, 2)
 
-        import pdb; pdb.set_trace()
         for datapoint, _ in _header:
             if datapoint is not None:
                 logger.debug("Found header")
