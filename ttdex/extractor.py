@@ -3,12 +3,15 @@ import csv
 import json
 import logging
 from itertools import tee
+import time
+import requests
 from pathlib import Path
 
 from typing import Iterable, Tuple, Optional, Callable
 
 import voluptuous as vp
 from ttdapi.client import TTDClient
+from ttdapi.exceptions import TTDApiError
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +63,22 @@ class StateFile(dict):
             json.dump(self, outf)
 
 class TTDExtractor(TTDClient):
+    timeouts = 0
+    def post(self, *args, **kwargs):
+        try:
+            return super().post(*args, **kwargs)
+        except (requests.HTTPError, TTDApiError)  as err:
+            logger.info("Too many requests")
+            if err.response.status_code == 429 and self.timeouts <= 5:
+                # max 5 so we don't infintely retry!
+                self.timeouts += 1
+                logger.info("waiting 65 seconds")
+                time.sleep(65)
+                logger.info("Retrying")
+                return super().post(*args, **kwargs)
+            else:
+                raise err
+
     def extract_sitelists(self, params):
         """
         https://apisb.thetradedesk.com/v3/doc/api/post-sitelist-query-advertiser
