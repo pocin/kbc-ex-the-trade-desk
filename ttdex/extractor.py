@@ -63,19 +63,15 @@ class StateFile(dict):
             json.dump(self, outf)
 
 class TTDExtractor(TTDClient):
-    timeouts = 0
-    def post(self, *args, **kwargs):
+    def _request(self, *args, **kwargs):
         try:
-            return super().post(*args, **kwargs)
+            return super()._request(*args, **kwargs)
         except (requests.HTTPError, TTDApiError)  as err:
-            logger.info("Too many requests")
-            if err.response.status_code == 429 and self.timeouts <= 5:
-                # max 5 so we don't infintely retry!
-                self.timeouts += 1
-                logger.info("waiting 65 seconds")
+            if err.response.status_code == 429:
+                logger.info("Too many requests, waiting 65 seconds")
                 time.sleep(65)
                 logger.info("Retrying")
-                return super().post(*args, **kwargs)
+                return super()._request(*args, **kwargs)
             else:
                 raise err
 
