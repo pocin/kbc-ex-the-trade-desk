@@ -143,7 +143,7 @@ the `LastChangeTrackingVersion` is cached under the hood in `state.json`
 use `"reset": True` to wipe statefile and redownload everything
 ```javascript
 {
- "delta_campaigns_all_advertisers": {
+ "delta_campaigns": {
         "partner_id": "foobar666",
         "advertisers": ["list", "of", "advetisers"], #either this or partner_id, NOT both!
         "reset": False
@@ -158,7 +158,7 @@ the `LastChangeTrackingVersion` is cached under the hood in `state.json`
 use `"reset": True` to wipe statefile and redownload everything
 ```javascript
 {
- "delta_adgroups_all_advertisers": {
+ "delta_adgroups": {
         "partner_id": "foobar666",
         "advertisers": ["list", "of", "advetisers"], #either this or partner_id, NOT both!
         "reset": False

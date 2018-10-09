@@ -274,6 +274,7 @@ class TTDExtractor(TTDClient):
 
         _header, delta_stream_of_data = tee(original_delta_stream, 2)
 
+        logger.debug("Looking for header")
         for datapoint, _ in _header:
             if datapoint is not None:
                 logger.debug("Found header")
@@ -292,6 +293,9 @@ class TTDExtractor(TTDClient):
             return None, tracking_versions
 
         tracking_versions = {}
+        total_rows = 0
+        written_rows = 0
+
         with open(outpath, 'w') as outf:
             writer = csv.DictWriter(outf, fieldnames=header)
             writer.writeheader()
@@ -305,7 +309,11 @@ class TTDExtractor(TTDClient):
 
                 # if row is None it means that the delta endpoint returned
                 # empty data but a new tracking version which we need to cache
+                total_rows += 1
                 if row is not None:
+
+                    written_rows += 1
+
                     writer.writerow(
                         {
                             key: (json.dumps(value) if isinstance(value, (dict, list)) else value)
@@ -315,6 +323,7 @@ class TTDExtractor(TTDClient):
                     )
                 tracking_versions.update(last_tracking_version)
 
+        print("total_rows: {}; written_rows: {}".format(total_rows, written_rows))
         return outpath, tracking_versions
 
 
