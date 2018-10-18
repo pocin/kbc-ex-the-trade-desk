@@ -490,7 +490,7 @@ def main(datadir, params):
                 adgrp_delta_stream,
                 outtables / 'delta_adgroups.csv'
             )
-            with open(outtables / 'delta_adrgoups.csv.manifest', 'w') as mani:
+            with open(outtables / 'delta_adgroups.csv.manifest', 'w') as mani:
                 json.dump({
                     'incremental': True,
                     'primary_key': ['CampaignId', 'AdGroupId']
