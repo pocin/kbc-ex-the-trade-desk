@@ -5,7 +5,7 @@ RUN apk add --no-cache git && pip3 install --no-cache-dir --upgrade \
       requests \
       voluptuous \
       https://github.com/keboola/python-docker-application/tarball/master \
-      git+https://github.com/pocin/thetradingdesk-python-client@0.1.10 \
+      git+https://github.com/pocin/thetradingdesk-python-client@0.1.12 \
       && apk del git
 
 WORKDIR /code
