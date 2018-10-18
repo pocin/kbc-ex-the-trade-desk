@@ -140,7 +140,9 @@ Will output a table `all_adgroups_all_advertisers.csv`.
 https://api.thetradedesk.com/v3/doc/api/post-delta-campaign-query-advertiser
 the `LastChangeTrackingVersion` is cached under the hood in `state.json`
 
-use `"reset": True` to wipe statefile and redownload everything
+use `"reset": True` to wipe statefile and redownload everything, otherwise the
+latest `LastChangeTrackingVersion"` is cached and reused
+
 ```javascript
 {
  "delta_campaigns": {
@@ -152,10 +154,12 @@ use `"reset": True` to wipe statefile and redownload everything
 ```
 
 ### Incremental (=delta) adgroups for all advertisers for given partner_id
-https://api.thetradedesk.com/v3/doc/api/post-delta-adgroup-query-advertiser
-the `LastChangeTrackingVersion` is cached under the hood in `state.json`
+https://api.thetradedesk.com/v3/doc/api/post-delta-adgroup-query-advertiser the
+`LastChangeTrackingVersion` is cached under the hood in `state.json`
 
-use `"reset": True` to wipe statefile and redownload everything
+use `"reset": True` to wipe statefile and redownload everything, otherwise the
+latest `LastChangeTrackingVersion"` is cached and reused
+
 ```javascript
 {
  "delta_adgroups": {

@@ -456,6 +456,12 @@ def main(datadir, params):
                 camp_delta_stream,
                 outtables / 'delta_campaigns.csv'
             )
+
+            with open(outtables / 'delta_campaigns.csv.manifest', 'w') as mani:
+                json.dump({
+                    'incremental': True,
+                    'primary_key': ['AdvertiserId', 'CampaignId']
+                }, mani)
             state["delta_campaigns"] = campaign_tracking_versions
 
 
@@ -484,6 +490,12 @@ def main(datadir, params):
                 adgrp_delta_stream,
                 outtables / 'delta_adgroups.csv'
             )
+            with open(outtables / 'delta_adrgoups.csv.manifest', 'w') as mani:
+                json.dump({
+                    'incremental': True,
+                    'primary_key': ['CampaignId', 'AdGroupId']
+                }, mani)
+
 
             state["delta_adgroups"] = adgroup_tracking_versions
 
