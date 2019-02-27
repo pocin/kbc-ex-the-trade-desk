@@ -364,6 +364,63 @@ class TTDExtractor(TTDClient):
                     )
         return outpath
 
+    def poll_cloned_campaign_get_details(
+            self,
+            inpath_references: Path,
+            outdir: Path):
+        outpath_campaigns = outdir / 'cloned_campaigns.csv'
+        outpath_adgroups = outdir / 'cloned_campaign_adgroups.csv'
+
+        with open(inpath_references) as inf:
+            input_header = list(csv.DictReader(inf).fieldnames)
+
+        with open(outpath_campaigns, 'w') as out_c,\
+             open(outpath_adgroups, 'w') as out_a,\
+             open(inpath_references) as inf:
+            wr_campaigns = csv.DictWriter(
+                out_c,
+                fieldnames=input_header + ['CampaignId',
+                                           'clone_response',
+                                           'campaign_payload'])
+            wr_campaigns.writeheader()
+
+            wr_adgroups = csv.DictWriter(
+                out_a,
+                fieldnames=['ReferenceId', 'CampaignId', 'AdGroupId', 'adgroup_payload'])
+            wr_adgroups.writeheader()
+
+            for row in csv.DictReader(inf):
+                reference_id = row['ReferenceId']
+                cloned_campaign = self._wait_for_cloned_campaign(reference_id)
+                campaign_id = cloned_campaign['CampaignId']
+                campaign_detail = self.get('campaign/{}'.format(campaign_id))
+                campaign_out = row.copy()
+                campaign_out['campaign_payload'] = json.dumps(campaign_detail)
+                campaign_out['clone_response'] = json.dumps(cloned_campaign)
+                campaign_out['CampaignId'] = campaign_id
+                wr_campaigns.writerow(campaign_out)
+
+                for adgroup_id in cloned_campaign['AdGroupIdMap'].values():
+                    adgroup_details = self.get('adgroup/{}'.format(adgroup_id))
+                    adgroup_out = {
+                        'ReferenceId': reference_id,
+                        'CampaignId': adgroup_details['CampaignId'],
+                        'AdGroupId': adgroup_details['AdGroupId'],
+                        'adgroup_payload': json.dumps(adgroup_details),
+                    }
+                    wr_adgroups.writerow(adgroup_out)
+
+
+    def _wait_for_cloned_campaign(self, reference_id):
+        delay = 1
+        while True:
+            resp = self.get('/campaign/clone/status/{}'.format(reference_id))
+            if resp['Status'] == 'InProgress':
+                time.sleep(delay)
+                delay *= 1.5
+            else:
+                return resp
+
 
 
 def main(datadir, params):
@@ -496,7 +553,13 @@ def main(datadir, params):
                     'primary_key': ['CampaignId', 'AdGroupId']
                 }, mani)
 
-
             state["delta_adgroups"] = adgroup_tracking_versions
+
+    path_poll_campaigns = intables / 'poll_cloned_campaign_get_details.csv'
+    logger.info("Looking for file %s", path_poll_campaigns)
+    if path_poll_campaigns.is_file():
+        logger.info('Found! Polling cloned campaigns')
+        with ex:
+            ex.poll_cloned_campaign_get_details(path_poll_campaigns, outtables)
 
     state.save_to_file(path= _datadir / 'out/state.json')

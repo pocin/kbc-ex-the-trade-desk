@@ -49,6 +49,36 @@ A final config might look like this
  }
 ```
 
+## from input files
+Special actions that require input csvs
+
+### `poll_cloned_campaign_get_details.csv`
+takes a `ReferenceId` from the input csv and does a series of calls
+1. GET campaign/clone/status/<reference_id> until status ='completed' - gives you `CampaignId` and `AdGroupIdMap`
+2. use the new campaign ID from step 1 in `GET
+   https://api.thetradedesk.com/v3/campaign/<campaignID>` and save it to `out/tables/cloned_campaigns.csv`
+3. For each AdGroupId in 1) `AdGroupIdMap` do `GET https://api.thetradedesk.com/v3/adgroup/<adgroupid>` and save it to `out/tables/cloned_campaign_adgroups.csv`
+
+
+#### Input
+`in/tables/poll_cloned_campaign_get_details.csv`
+
+```csv
+ReferenceId[,any_optional,columns]
+abc123,copied_over,to_output
+```
+#### Output
+
+`out/tables/cloned_campaigns.csv`
+```csv
+ReferenceId,CampaignId,campaign_payload
+```
+
+`out/tables/cloned_campaign_adgroups.csv`
+```csv
+ReferenceId,CampaignId,AdGroupId,adgroup_payload
+```
+
 ## Predefined requests
 ### Get campaign templates
 
