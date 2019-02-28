@@ -395,20 +395,32 @@ class TTDExtractor(TTDClient):
                 campaign_id = cloned_campaign['CampaignId']
                 campaign_detail = self.get('campaign/{}'.format(campaign_id))
                 campaign_out = row.copy()
-                campaign_out['campaign_payload'] = json.dumps(campaign_detail)
                 campaign_out['clone_response'] = json.dumps(cloned_campaign)
-                campaign_out['CampaignId'] = campaign_id
-                wr_campaigns.writerow(campaign_out)
+                if cloned_campaign['Status'] == 'Completed':
+                    campaign_out['campaign_payload'] = json.dumps(
+                        campaign_detail)
+                    campaign_out['CampaignId'] = campaign_id
+                    wr_campaigns.writerow(campaign_out)
 
-                for adgroup_id in cloned_campaign['AdGroupIdMap'].values():
-                    adgroup_details = self.get('adgroup/{}'.format(adgroup_id))
-                    adgroup_out = {
-                        'ReferenceId': reference_id,
-                        'CampaignId': adgroup_details['CampaignId'],
-                        'AdGroupId': adgroup_details['AdGroupId'],
-                        'adgroup_payload': json.dumps(adgroup_details),
-                    }
-                    wr_adgroups.writerow(adgroup_out)
+                    for adgroup_id in cloned_campaign['AdGroupIdMap'].values():
+                        adgroup_details = self.get(
+                            'adgroup/{}'.format(adgroup_id))
+                        adgroup_out = {
+                            'ReferenceId': reference_id,
+                            'CampaignId': adgroup_details['CampaignId'],
+                            'AdGroupId': adgroup_details['AdGroupId'],
+                            'adgroup_payload': json.dumps(adgroup_details),
+                        }
+                        wr_adgroups.writerow(adgroup_out)
+                else:
+                    # we need to still write failed/timeouted campaigns
+                    campaign_out['campaign_payload'] = ''
+                    campaign_out['CampaignId'] = ''
+                    wr_campaigns.writerow(campaign_out)
+                    logger.info("Cloned campaign with ReferenceId %s failed. %s",
+                                reference_id,
+                                cloned_campaign)
+
 
 
     def _wait_for_cloned_campaign(self, reference_id):
